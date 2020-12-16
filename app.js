@@ -1,3 +1,7 @@
+const CONTRACT_ADDRESS = ~window.location.href.indexOf('testnet')
+  ? '0xB5198CeC249A98c29250c0E62D45749e20feC307'
+  : '0xB5198CeC249A98c29250c0E62D45749e20feC307'
+
 // App - app object
 App = {
   contracts: {},
@@ -53,17 +57,16 @@ App = {
 
   loadContract: async () => {
     const abi = await $.getJSON('CrowdSale.json')
-    const contractAddress = '0xB5198CeC249A98c29250c0E62D45749e20feC307'
 
     App.contracts.CrowdSaleContract = TruffleContract({
       abi: abi,
-      address: contractAddress,
+      address: CONTRACT_ADDRESS,
     })
 
     App.contracts.CrowdSaleContract.setProvider(App.web3Provider)
 
     App.CrowdSaleInstance = await App.contracts.CrowdSaleContract.at(
-      contractAddress
+      CONTRACT_ADDRESS
     )
   },
 
