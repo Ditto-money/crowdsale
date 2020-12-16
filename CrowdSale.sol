@@ -276,15 +276,16 @@ contract Crowdsale is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     // The token being sold
-    IERC20 private _token;
+    IERC20 public _token;
 
     // Address where funds are collected
-    address payable private _wallet;
+    address payable public _wallet;
 
-    uint256 private _usdwei;
+    uint256 public _usdwei;                // price of 1 USD in Wei (BSC: smallest unit of native token)
+    uint256 public _tokenprice_in_cents;   // price of 1 token in USD cents, e.g. 90 = $0.90
 
     // Amount of wei raised
-    uint256 private _weiRaised;
+    uint256 public weiRaised;
 
     /**
      * Event for token purchase logging
@@ -298,14 +299,16 @@ contract Crowdsale is ReentrancyGuard, Ownable {
     /**
      * @param usdwei Wei price of 1 USD
      * @param wallet Address where collected funds will be forwarded to
+     * @param tokenSalePrice price of 1 token in USD cents, e.g. 90 = $0.90
      * @param token Address of the token being sold
      */
-    constructor (uint256 usdwei, address payable wallet, IERC20 token) public {
+    constructor (uint256 usdwei, address payable wallet, IERC20 token, uint256 tokenSalePrice) public {
         require(usdwei > 0, "Crowdsale: USD wei price is 0");
         require(wallet != address(0), "Crowdsale: wallet is the zero address");
         require(address(token) != address(0), "Crowdsale: token is the zero address");
 
         _usdwei = usdwei;
+        _tokenprice_in_cents = tokenSalePrice;
         _wallet = wallet;
         _token = token;
     }
@@ -319,33 +322,31 @@ contract Crowdsale is ReentrancyGuard, Ownable {
     fallback() external payable {
         buyTokens(msg.sender);
     }
+    
+    receive() external payable {
+        buyTokens(msg.sender);
+    }
 
     /**
      * @param usdwei Wei price of 1 USD
      */
     function updateUSDWeiRate(uint256 usdwei) external onlyOwner {
-        _usdwei = usdwei;
+      _usdwei = usdwei;
+    }
+    
+    /**
+     * @param tokenprice_in_cents Price of one token in USD cents
+     */
+    function updateTokenSalePrice(uint256 tokenprice_in_cents) external onlyOwner {
+      _tokenprice_in_cents = tokenprice_in_cents;
     }
 
     /**
-     * @return the token being sold.
+     * Returns 'true' if there are tokens left in the allowance.
      */
-    function token() public view returns (IERC20) {
-        return _token;
-    }
 
-    /**
-     * @return the address where funds are collected.
-     */
-    function wallet() public view returns (address payable) {
-        return _wallet;
-    }
-
-    /**
-     * @return the amount of wei raised.
-     */
-    function weiRaised() public view returns (uint256) {
-        return _weiRaised;
+    function isSaleActive() external view returns (bool) {
+      return (_token.allowance(owner(), address(this)) > 0);
     }
 
     /**
@@ -362,7 +363,7 @@ contract Crowdsale is ReentrancyGuard, Ownable {
         uint256 tokens = _getTokenAmount(weiAmount);
 
         // update state
-        _weiRaised = _weiRaised.add(weiAmount);
+        weiRaised = weiRaised.add(weiAmount);
 
         _processPurchase(beneficiary, tokens);
         emit TokensPurchased(msg.sender, beneficiary, weiAmount, tokens);
@@ -434,18 +435,10 @@ contract Crowdsale is ReentrancyGuard, Ownable {
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
     function _getTokenAmount(uint256 weiAmount) public view returns (uint256) {
-
-        uint256 tokenprice_usd;
         
-        if (weiAmount > 25 ether) {
-            tokenprice_usd = _usdwei.mul(80).div(100);
-        } else if (weiAmount > 5 ether) {
-            tokenprice_usd = _usdwei.mul(85).div(100);
-        } else {
-            tokenprice_usd = _usdwei.mul(90).div(100);       
-        }
+        uint256 rate = _usdwei.mul(_tokenprice_in_cents).div(100);
 
-        uint256 result = (weiAmount.mul(1e18).div(tokenprice_usd)).div(1e9);
+        uint256 result = (weiAmount.mul(1e18).div(rate)).div(1e9);
         
         require(result > 0, "Less than minimum amount paid");
         
@@ -465,29 +458,26 @@ contract Crowdsale is ReentrancyGuard, Ownable {
  * @title AllowanceCrowdsale
  * @dev Extension of Crowdsale where tokens are held by a wallet, which approves an allowance to the crowdsale.
  */
-contract AllowanceCrowdsale is Crowdsale {
+contract DittoCrowdsale is Crowdsale {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20; 
 
     address private _tokenWallet;
 
     /**
      * @dev Constructor, takes token wallet address.
      * @param tokenWallet Address holding the tokens, which has approved allowance to the crowdsale.
+     * @param usdwei Wei price of 1 USD
+     * @param wallet Address where collected funds will be forwarded to
+     * @param token Address of the tokenc being sold
+     * @param tokenSalePrice price of 1 token in USD cents, e.g. 90 = $0.90
      */
-    constructor (address tokenWallet, uint256 usdwei, address payable wallet, IERC20 token)
+    constructor (address tokenWallet, uint256 usdwei, address payable wallet, IERC20 token, uint256 tokenSalePrice)
         public 
-        Crowdsale(usdwei, wallet, token)
+        Crowdsale(usdwei, wallet, token, tokenSalePrice)
     {
-        require(tokenWallet != address(0), "AllowanceCrowdsale: token wallet is the zero address");
+        require(tokenWallet != address(0), "DittoCrowdsale: token wallet is the zero address");
         _tokenWallet = tokenWallet;
-    }
-
-    /**
-     * @return the address of the wallet that will hold the tokens.
-     */
-    function tokenWallet() public view returns (address) {
-        return _tokenWallet;
     }
 
     /**
@@ -495,7 +485,7 @@ contract AllowanceCrowdsale is Crowdsale {
      * @return Amount of tokens left in the allowance
      */
     function remainingTokens() public view returns (uint256) {
-        return Math.min(token().balanceOf(_tokenWallet), token().allowance(_tokenWallet, address(this)));
+        return Math.min(_token.balanceOf(_tokenWallet), _token.allowance(_tokenWallet, address(this)));
     }
 
     /**
@@ -504,6 +494,6 @@ contract AllowanceCrowdsale is Crowdsale {
      * @param tokenAmount Amount of tokens purchased
      */
     function _deliverTokens(address beneficiary, uint256 tokenAmount) internal override {
-        token().safeTransferFrom(_tokenWallet, beneficiary, tokenAmount);
+        _token.safeTransferFrom(_tokenWallet, beneficiary, tokenAmount);
     }
 }
