@@ -1,3 +1,3 @@
-# Crowdsale
+# Ditto Crowdsale
 
-Basic ERC20 crowdsale smart contract and HTML template.
+Ditto crowdsale smart contract and HTML template. Dynamically calculates the Ditto/BNB rate.
