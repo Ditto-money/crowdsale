@@ -50,7 +50,8 @@
       <div class="row">
         <main role="main" class="d-flex col-lg-12 justify-content-center">
           <div id="loader" class="text-center">
-            <h5 class="text-center">Loading...</h5>
+            <h5 id="loading" class="text-center">Loading...</h5>
+
             <div id="txn-processing-msg" style="display: none">
               <br />
               <h4 class="text-center">Your transaction is being processed</h4>
@@ -60,6 +61,23 @@
               </h4>
               <br />
               <img src="loader.gif" width="75px" height="75px" />
+            </div>
+
+            <div id="incorrect-network" style="display: none">
+              <br />
+              <h4 class="text-center">
+                You are connected to the wrong network.
+              </h4>
+              <h4 class="text-center">
+                Here's a
+                <a
+                  target="_blank"
+                  href="https://www.binance.com/en/blog/421499824684901055/Get-Started-on-Binance-Smart-Chain-in-60-Seconds"
+                  >guide</a
+                >
+                on how to connect to the
+                <span id="correct-network-label"></span>.
+              </h4>
             </div>
           </div>
           <div id="content">

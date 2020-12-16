@@ -1,6 +1,8 @@
-const CONTRACT_ADDRESS = ~window.location.href.indexOf('testnet')
+const IS_TESTNET = ~window.location.href.indexOf('testnet')
+const CONTRACT_ADDRESS = IS_TESTNET
   ? '0xB5198CeC249A98c29250c0E62D45749e20feC307'
   : '0xB5198CeC249A98c29250c0E62D45749e20feC307'
+const REQUIRED_CHAIN_ID = IS_TESTNET ? 97 : 56
 
 // App - app object
 App = {
@@ -18,7 +20,7 @@ App = {
       App.web3Provider = web3.currentProvider
       web3 = new Web3(web3.currentProvider)
     } else {
-      console.log('Please connect to Metamask.')
+      throw new Error('Please connect to Metamask.')
     }
     // Modern dapp browsers...
     if (window.ethereum) {
@@ -36,9 +38,19 @@ App = {
     }
     // Non-dapp browsers...
     else {
-      console.log(
+      throw new Error(
         'Non-Ethereum browser detected. You should consider trying MetaMask!'
       )
+    }
+
+    const chainId = parseInt(web3.currentProvider.chainId, 16)
+    if (chainId !== REQUIRED_CHAIN_ID) {
+      $('#incorrect-network').show()
+      $('#correct-network-label').text(
+        `Binance Smart Chain ${IS_TESTNET ? 'Testnet' : 'Mainnet'}`
+      )
+      $('#loading').hide()
+      throw new Error('Wrong chain')
     }
   },
 
@@ -90,7 +102,7 @@ App = {
   },
 
   async checkIsActive() {
-    this.isActive = await App.CrowdSaleInstance.isSaleActive()
+    App.isActive = await App.CrowdSaleInstance.isSaleActive()
   },
 
   setRemainingTokens: async () => {
@@ -121,7 +133,7 @@ App = {
   },
 
   buyTokens: async () => {
-    if (!this.isActive) {
+    if (!App.isActive) {
       return alert('Sale is not active.')
     }
     let inputAmount = $('#input-amount').val()
@@ -154,7 +166,8 @@ App = {
       $('#connect-wallet-btn').show()
       $('#buy-btn').hide()
     }
-    if (!this.isActive) {
+    console.log(App.isActive)
+    if (!App.isActive) {
       $('#buy-btn').text('Sale is not active')
     }
   },
