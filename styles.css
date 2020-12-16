@@ -124,20 +124,19 @@
   border-color: initial;
   border-image: initial;
   padding: 0px 0.5rem;
+  width: 110px;
 }
 
 .currency {
   display: flex;
   -webkit-box-align: center;
   align-items: center;
-  -webkit-box-pack: justify;
-  justify-content: space-between;
 }
 
 .currency-img {
   width: 24px;
   height: 24px;
-  box-shadow: rgba(0, 0, 0, 0.075) 0px 6px 10px;
+  /*box-shadow: rgba(0, 0, 0, 0.075) 0px 6px 10px;*/
   border-radius: 24px;
 }
 
