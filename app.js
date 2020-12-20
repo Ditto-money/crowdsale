@@ -17,7 +17,6 @@ App = {
 
   loadWeb3: async () => {
     if (typeof web3 !== 'undefined') {
-      App.web3Provider = web3.currentProvider
       web3 = new Web3(web3.currentProvider)
     } else {
       throw new Error('Please connect to Metamask.')
@@ -70,15 +69,10 @@ App = {
   loadContract: async () => {
     const abi = await $.getJSON('CrowdSale.json')
 
-    App.contracts.CrowdSaleContract = TruffleContract({
-      abi: abi,
-      address: CONTRACT_ADDRESS,
-    })
-
-    App.contracts.CrowdSaleContract.setProvider(App.web3Provider)
-
-    App.CrowdSaleInstance = await App.contracts.CrowdSaleContract.at(
-      CONTRACT_ADDRESS
+    App.CrowdSaleInstance = new ethers.Contract(
+      CONTRACT_ADDRESS,
+      abi,
+      new ethers.providers.Web3Provider(web3.currentProvider).getSigner()
     )
   },
 
@@ -106,21 +100,30 @@ App = {
   },
 
   setRemainingTokens: async () => {
-    let result = (await App.CrowdSaleInstance.remainingTokens()).toNumber()
-    const remainingTokens = (result / 10 ** 9).toFixed(9)
-
+    const remainingTokens = toPrecision(
+      ethers.utils
+        .formatUnits(await App.CrowdSaleInstance.remainingTokens(), 9)
+        .toString()
+    )
     $('#remainingTokens').html(remainingTokens)
   },
 
   calculateReceiveAmount: async () => {
     let inputAmount = $('#input-amount').val()
     if (inputAmount) {
-      let inputAmountInWei = web3.toWei(parseFloat(inputAmount))
+      const inputAmountInWei = ethers.utils.parseEther(inputAmount)
+      if (inputAmountInWei.isZero()) {
+        return
+      }
       try {
-        let result = (
-          await App.CrowdSaleInstance._getTokenAmount(inputAmountInWei)
-        ).toNumber()
-        const receiveAmount = (result / 10 ** 9).toFixed(9)
+        const receiveAmount = toPrecision(
+          ethers.utils
+            .formatUnits(
+              await App.CrowdSaleInstance._getTokenAmount(inputAmountInWei),
+              9
+            )
+            .toString()
+        )
         $('#receive-amount').val(receiveAmount)
       } catch (error) {
         console.error(error)
@@ -138,11 +141,10 @@ App = {
     }
     let inputAmount = $('#input-amount').val()
     if (inputAmount) {
-      let inputAmountInWei = web3.toWei(parseFloat(inputAmount))
+      let inputAmountInWei = ethers.utils.parseEther(inputAmount)
       try {
         App.setLoading(true, true)
         await App.CrowdSaleInstance.buyTokens(App.account, {
-          from: App.account,
           value: inputAmountInWei,
         })
         App.setLoading(false)
@@ -203,3 +205,7 @@ $(async () => {
   })
   // })
 })
+
+function toPrecision(n) {
+  return new Big(n).toFixed(4)
+}
