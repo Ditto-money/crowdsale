@@ -25,6 +25,7 @@ $(async () => {
   $('#buy-btn').click(buyTokens)
   $('#input-amount').keyup(calculateReceiveAmount)
   $('#connect-metamask').click(connectMetamask)
+  $('#connect-trust').click(connectMetamask)
   $('#connect-wallet-connect').click(connectWalletConnect)
   $('#connect-bsc').click(connectBsc)
   $('#connect-wallets .close').click(closeWallets)
@@ -69,7 +70,7 @@ async function connectMetamask() {
     return sl('error', 'Please install the Metamask extension')
   await window.ethereum.enable()
   closeWallets()
-  await loadAccount(window.web3.currentProvider)
+  await loadAccount(window.ethereum)
 }
 
 async function connectWalletConnect() {
@@ -92,7 +93,7 @@ async function connectBsc() {
 async function loadAccount(p) {
   const provider = new ethers.providers.Web3Provider(p)
   const net = await provider.getNetwork()
-  if (net.chainId !== REQUIRED_CHAIN_ID) {
+  if (net.chainId !== REQUIRED_CHAIN_ID && !p.isTrust) {
     if (p.disconnect) {
       p.disconnect()
     }
