@@ -3,6 +3,7 @@ const CONTRACT_ADDRESS = IS_TESTNET
   ? '0xB5198CeC249A98c29250c0E62D45749e20feC307'
   : '0xdA0B550bB87BCC64AA177Fc88c23902DC01Da6aa'
 const REQUIRED_CHAIN_ID = IS_TESTNET ? 97 : 56
+const TRUST_WALLET_BUG_CHAIN_ID = 86
 const READ_WEB3_PROVIDER = new ethers.providers.JsonRpcProvider(
   IS_TESTNET
     ? 'https://data-seed-prebsc-1-s1.binance.org:8545'
@@ -95,7 +96,7 @@ async function connectBsc() {
 async function loadAccount(p) {
   const provider = new ethers.providers.Web3Provider(p)
   const net = await provider.getNetwork()
-  if (net.chainId !== REQUIRED_CHAIN_ID && !p.isTrust) {
+  if (!~[REQUIRED_CHAIN_ID, TRUST_WALLET_BUG_CHAIN_ID].indexOf(net.chainId)) {
     if (p.disconnect) {
       p.disconnect()
     }
