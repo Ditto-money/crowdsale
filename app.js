@@ -151,7 +151,9 @@ async function checkIsActive() {
 
 async function setRemainingTokens() {
   const remainingTokens = toHumanizedCurrency(
-    (await READ_CONTRACT.remainingTokens()).div(1e9)
+    new Big((await READ_CONTRACT.remainingTokens()).toString()).div(
+      new Big(1e9)
+    )
   )
   $('#remainingTokens').html(remainingTokens)
 }
@@ -165,7 +167,9 @@ async function calculateReceiveAmount() {
     }
     try {
       const receiveAmount = toHumanizedCurrency(
-        (await READ_CONTRACT._getTokenAmount(inputAmountInWei)).div(1e9)
+        new Big(
+          (await READ_CONTRACT._getTokenAmount(inputAmountInWei)).toString()
+        ).div(new Big(1e9))
       )
       $('#receive-amount').val(receiveAmount)
     } catch (error) {
