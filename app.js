@@ -10,6 +10,8 @@ const READ_WEB3_PROVIDER = new ethers.providers.JsonRpcProvider(
 )
 const INFURA_ID = '1e8cc8aac2bd47f98da31fd2846d6132'
 
+toFormat(Big)
+
 let ABI, READ_CONTRACT, WRITE_CONTRACT, WRITE_WEB3_PROVIDER
 let LOADING = false
 let IS_ACTIVE = false
@@ -242,7 +244,7 @@ function sl(type, msg) {
 
 function toHumanizedCurrency(val) {
   if (val.toNumber) {
-    val = val.toNumber()
+    return new Big(val.toString()).toFormat(2)
   }
   return new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'})
     .format(val)
